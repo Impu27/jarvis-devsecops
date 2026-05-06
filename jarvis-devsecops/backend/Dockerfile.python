@@ -1,0 +1,31 @@
+# ── Python RAG Microservice Dockerfile ───────────────────────────────────────
+FROM python:3.11-slim AS base
+
+WORKDIR /app
+
+# System deps for ChromaDB & sentence-transformers
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python deps
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy source
+COPY rag_service.py ./
+
+# Create the chroma data directory and set permissions BEFORE switching user
+# This ensures the non-root user can write to the volume mount point
+RUN mkdir -p /data/chroma_db && \
+    useradd -m -u 1001 raguser && \
+    chown -R raguser:raguser /data /app
+
+USER raguser
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
+
+CMD ["uvicorn", "rag_service:app", "--host", "0.0.0.0", "--port", "8000"]
