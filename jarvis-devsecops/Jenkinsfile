@@ -3,21 +3,19 @@ pipeline {
 
     stages {
 
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
         stage('Build Docker Images') {
             steps {
-                bat 'docker compose build'
+                dir('jarvis-devsecops') {
+                    bat 'docker compose build'
+                }
             }
         }
 
         stage('Start Containers') {
             steps {
-                bat 'docker compose up -d'
+                dir('jarvis-devsecops') {
+                    bat 'docker compose up -d'
+                }
             }
         }
 
@@ -29,8 +27,11 @@ pipeline {
 
         stage('Stop Containers') {
             steps {
-                bat 'docker compose down'
+                dir('jarvis-devsecops') {
+                    bat 'docker compose down'
+                }
             }
         }
+
     }
 }
